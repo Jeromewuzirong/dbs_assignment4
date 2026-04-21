@@ -3,6 +3,7 @@ node_modules
 dist
 .vercel
 .railway
+*.tsbuildinfo
 .env
 .env.local
 .env.*.local
