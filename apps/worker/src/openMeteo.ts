@@ -1,4 +1,4 @@
-type TrackedLocation = {
+export type TrackedLocation = {
   id: string;
   latitude: number;
   longitude: number;

@@ -18,8 +18,41 @@ const formatTimestamp = (value: string) =>
     timeStyle: "short"
   }).format(new Date(value));
 
+const getWeatherIcon = (code: number) => {
+  if (code === 0) {
+    return "☀";
+  }
+
+  if (code === 1 || code === 2) {
+    return "⛅";
+  }
+
+  if (code === 3) {
+    return "☁";
+  }
+
+  if (code === 45 || code === 48) {
+    return "〰";
+  }
+
+  if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) {
+    return "☂";
+  }
+
+  if ([71, 73, 75].includes(code)) {
+    return "❄";
+  }
+
+  if (code === 95) {
+    return "⚡";
+  }
+
+  return "●";
+};
+
 export const WeatherDashboard = ({ initialSnapshot, locationId, locationName, unit }: WeatherDashboardProps) => {
-  const [snapshot, setSnapshot] = useState<WeatherSnapshotRow | null>(initialSnapshot);
+  const [realtimeSnapshot, setRealtimeSnapshot] = useState<WeatherSnapshotRow | null>(null);
+  const snapshot = realtimeSnapshot ?? initialSnapshot;
 
   useEffect(() => {
     if (!locationId) {
@@ -38,7 +71,7 @@ export const WeatherDashboard = ({ initialSnapshot, locationId, locationName, un
           filter: `location_id=eq.${locationId}`
         },
         (payload) => {
-          setSnapshot(payload.new as WeatherSnapshotRow);
+          setRealtimeSnapshot(payload.new as WeatherSnapshotRow);
         }
       )
       .subscribe();
@@ -74,7 +107,7 @@ export const WeatherDashboard = ({ initialSnapshot, locationId, locationName, un
             {locationName ?? "Choose a city"}
           </h2>
           <p className="mt-2 text-slate-600">
-            {snapshot ? `Weather updates stream in as the worker writes new rows.` : "Waiting for the worker to write the first snapshot."}
+            {snapshot ? "Weather updates stream in as the worker writes new rows." : "Waiting for the worker to write the first snapshot."}
           </p>
         </div>
 
@@ -100,9 +133,14 @@ export const WeatherDashboard = ({ initialSnapshot, locationId, locationName, un
 
           <article className="mt-4 rounded-[1.5rem] bg-slate-950 p-6 text-slate-50">
             <p className="text-sm uppercase tracking-[0.2em] text-amber-300">Condition</p>
-            <p className="mt-3 font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
-              {formatWeatherCode(snapshot.weather_code)}
-            </p>
+            <div className="mt-3 flex items-center gap-3">
+              <span aria-hidden="true" className="text-3xl leading-none text-amber-300">
+                {getWeatherIcon(snapshot.weather_code)}
+              </span>
+              <p className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
+                {formatWeatherCode(snapshot.weather_code)}
+              </p>
+            </div>
             <p className="mt-3 text-sm text-slate-300">
               Realtime source: worker insert into Supabase `weather_snapshots`, subscribed in-browser through Supabase Realtime.
             </p>

@@ -1,8 +1,20 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-import { config } from "./config.js";
-import { fetchSnapshot, type SnapshotInsert } from "./openMeteo.js";
-import { supabase } from "./supabase.js";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+loadEnv({
+  path: path.resolve(__dirname, "../.env.local"),
+  override: false
+});
+
+const [{ config }, { fetchAndStoreSnapshot }, { supabase }] = await Promise.all([
+  import("./config.js"),
+  import("./weatherSnapshots.js"),
+  import("./supabase.js")
+]);
 
 type TrackedLocation = {
   id: string;
@@ -13,9 +25,22 @@ type TrackedLocation = {
 };
 
 const loadTrackedLocations = async (): Promise<TrackedLocation[]> => {
+  const { data: trackedRows, error: trackedRowsError } = await supabase.from("user_tracked_locations").select("location_id");
+
+  if (trackedRowsError) {
+    throw trackedRowsError;
+  }
+
+  const locationIds = [...new Set((trackedRows ?? []).map((row) => row.location_id))];
+
+  if (locationIds.length === 0) {
+    return [];
+  }
+
   const { data, error } = await supabase
     .from("tracked_locations")
     .select("id, name, latitude, longitude, timezone")
+    .in("id", locationIds)
     .order("name");
 
   if (error) {
@@ -29,18 +54,6 @@ const loadTrackedLocations = async (): Promise<TrackedLocation[]> => {
   }));
 };
 
-const storeSnapshots = async (snapshots: SnapshotInsert[]) => {
-  if (snapshots.length === 0) {
-    return;
-  }
-
-  const { error } = await supabase.from("weather_snapshots").insert(snapshots);
-
-  if (error) {
-    throw error;
-  }
-};
-
 const pollOnce = async () => {
   const startedAt = new Date().toISOString();
   console.log(`[${startedAt}] Starting weather poll`);
@@ -52,20 +65,19 @@ const pollOnce = async () => {
     return;
   }
 
-  const results = await Promise.allSettled(locations.map((location) => fetchSnapshot(location)));
-  const successfulSnapshots: SnapshotInsert[] = [];
+  const results = await Promise.allSettled(locations.map((location) => fetchAndStoreSnapshot(supabase, location)));
+  let successfulSnapshots = 0;
 
   results.forEach((result, index) => {
     if (result.status === "fulfilled") {
-      successfulSnapshots.push(result.value);
+      successfulSnapshots += 1;
       return;
     }
 
     console.error(`Failed to fetch ${locations[index]?.name ?? "unknown location"}:`, result.reason);
   });
 
-  await storeSnapshots(successfulSnapshots);
-  console.log(`Stored ${successfulSnapshots.length} weather snapshots`);
+  console.log(`Stored ${successfulSnapshots} weather snapshots`);
 };
 
 const main = async () => {

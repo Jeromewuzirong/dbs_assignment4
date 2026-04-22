@@ -6,7 +6,13 @@ import { WeatherDashboard } from "@/components/weather-dashboard";
 import { getDashboardData } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function HomePage() {
+type HomePageProps = {
+  searchParams?: Promise<{
+    message?: string;
+  }>;
+};
+
+export default async function HomePage({ searchParams }: HomePageProps) {
   const supabase = await createClient();
   const {
     data: { user }
@@ -16,6 +22,7 @@ export default async function HomePage() {
     redirect("/login");
   }
 
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const { latestSnapshot, locations, selectedLocation, temperatureUnit } = await getDashboardData(user.id);
 
   return (
@@ -25,7 +32,7 @@ export default async function HomePage() {
           <div className="space-y-4">
             <p className="text-sm uppercase tracking-[0.3em] text-[var(--accent)]">Week 4 Realtime System</p>
             <h1 className="font-[family-name:var(--font-display)] text-4xl font-semibold tracking-tight text-slate-900 sm:text-5xl">
-              Open-Meteo to Supabase to live UI.
+              Weather Report
             </h1>
             <p className="max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
               The worker polls live weather, writes snapshots into Supabase, and this page updates over Realtime
@@ -44,7 +51,12 @@ export default async function HomePage() {
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        <PreferencesForm locations={locations} selectedLocationId={selectedLocation?.id ?? null} temperatureUnit={temperatureUnit} />
+        <PreferencesForm
+          locations={locations}
+          message={resolvedSearchParams?.message ?? null}
+          selectedLocationId={selectedLocation?.id ?? null}
+          temperatureUnit={temperatureUnit}
+        />
         <WeatherDashboard
           key={`${selectedLocation?.id ?? "none"}-${temperatureUnit}`}
           initialSnapshot={latestSnapshot}

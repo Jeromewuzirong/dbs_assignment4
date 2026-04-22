@@ -35,6 +35,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_tracked_locations: {
+        Row: {
+          created_at: string;
+          location_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          location_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          location_id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_preferences: {
         Row: {
           location_id: string | null;
@@ -101,6 +119,7 @@ export type Database = {
 };
 
 export type LocationRow = Database["public"]["Tables"]["tracked_locations"]["Row"];
+export type UserTrackedLocationRow = Database["public"]["Tables"]["user_tracked_locations"]["Row"];
 export type UserPreferenceRow = Database["public"]["Tables"]["user_preferences"]["Row"];
 export type WeatherSnapshotRow = Database["public"]["Tables"]["weather_snapshots"]["Row"];
 
