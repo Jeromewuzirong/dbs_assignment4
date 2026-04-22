@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import { createClient } from "@/lib/supabase/browser";
 import { formatTemperature, formatWeatherCode, type WeatherSnapshotRow, type TemperatureUnit } from "@/lib/types";
@@ -18,7 +18,7 @@ const formatTimestamp = (value: string) =>
     timeStyle: "short"
   }).format(new Date(value));
 
-const getWeatherIcon = (code: number) => {
+const getWeatherIcon = (code: number): ReactNode => {
   if (code === 0) {
     return "☀";
   }
@@ -28,7 +28,11 @@ const getWeatherIcon = (code: number) => {
   }
 
   if (code === 3) {
-    return "☁";
+    return (
+      <svg viewBox="0 0 64 40" className="h-7 w-10 fill-current" aria-hidden="true">
+        <path d="M20 33h24c8.3 0 15-5.8 15-13 0-6.6-5.7-12.2-12.9-12.9C43.9 2.9 38.4 0 32.4 0 24 0 17 5.6 15.1 13.1 7.4 13.5 1.2 19.2 1.2 26.2 1.2 29.9 3 33 20 33Z" />
+      </svg>
+    );
   }
 
   if (code === 45 || code === 48) {
@@ -134,7 +138,7 @@ export const WeatherDashboard = ({ initialSnapshot, locationId, locationName, un
           <article className="mt-4 rounded-[1.5rem] bg-slate-950 p-6 text-slate-50">
             <p className="text-sm uppercase tracking-[0.2em] text-amber-300">Condition</p>
             <div className="mt-3 flex items-center gap-3">
-              <span aria-hidden="true" className="text-3xl leading-none text-amber-300">
+              <span aria-hidden="true" className="flex h-8 w-9 items-center justify-center text-3xl leading-none text-amber-300">
                 {getWeatherIcon(snapshot.weather_code)}
               </span>
               <p className="font-[family-name:var(--font-display)] text-3xl font-semibold tracking-tight">
